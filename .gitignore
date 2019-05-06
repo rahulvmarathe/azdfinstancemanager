@@ -338,3 +338,6 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
+
+#kubernetes config file
+/EngineInstanceMgr/kubeconfig.json

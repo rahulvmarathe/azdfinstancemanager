@@ -10,6 +10,8 @@ namespace EngineInstanceMgr
 
         public string CaseNumber { get; set; }
 
+        public string InstanceId { get; set; }
+
         public Compute Compute { get; set; }
     }
 }

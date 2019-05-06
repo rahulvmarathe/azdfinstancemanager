@@ -1,0 +1,23 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: dsirona-engine-ag-03
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dsirona-engine-ag-03
+  template:
+    metadata:
+      labels:
+        app: dsirona-engine-ag-03
+    spec:
+      containers:
+      - name: dsirona-engine-ag-03
+        image: rahulvmarathe.azurecr.io/agesaspnetcorelt
+        ports:
+          - containerPort: 80
+      imagePullSecrets:
+      - name: acr-auth
+      nodeSelector:
+        "beta.kubernetes.io/os": windows

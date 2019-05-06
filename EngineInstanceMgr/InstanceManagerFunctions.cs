@@ -11,12 +11,13 @@ using Newtonsoft.Json;
 
 namespace EngineInstanceMgr
 {
-    public static class InstanceManagerFunctions
+    public static partial class InstanceManagerFunctions
     {
         [FunctionName("EngineInstance")]
         public static async Task<string> RunOrchestrator(
             [OrchestrationTrigger] DurableOrchestrationContext context
-            ,ILogger log)
+            ,ExecutionContext contex
+            , ILogger log)
         {
 
             var session = context.GetInput<UserSession>();
@@ -27,6 +28,7 @@ namespace EngineInstanceMgr
             startState.CaseNumber = session.CaseNumber;
             startState.userId = session.userId;
             startState.Compute = compute;
+            startState.InstanceId = context.InstanceId;
             context.SetCustomStatus(startState);
 
             log.LogInformation("Saved Compute State");
@@ -81,76 +83,15 @@ namespace EngineInstanceMgr
         }
 
 
-        [FunctionName("CreateCompute")]
-        public static Compute CreateCompute([ActivityTrigger] string caseNumber, ILogger log)
-        {
-            log.LogInformation($"Creating compute for {caseNumber}.");
-            var compute = new Compute();
-            compute.Key = Guid.NewGuid().ToString();
-
-            return compute;
-        }
-
-        [FunctionName("DeleteCompute")]
-        public static void DeleteCompute([ActivityTrigger] Compute compute, ILogger log)
-        {
-            log.LogInformation($"Deleting compute {compute.Key}");
-
-            
-        }
 
 
 
-        [FunctionName("GetEngineInstance")]
-        public static async Task<HttpResponseMessage> GetEngineInstance(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get",Route = "GetEngineInstance/{caseNumber}")]HttpRequestMessage req,
-            [OrchestrationClient]DurableOrchestrationClient starter,
-            string caseNumber,
-            ILogger log)
-        {
-
-            var userSession = new UserSession();
-            //to be set from auth token
-            userSession.userId = "";
-            userSession.CaseNumber = caseNumber;
-
-            // Function input comes from the request content.
-            string instanceId = await starter.StartNewAsync("EngineInstance", userSession);
-
-            log.LogInformation($"Started orchestration with ID = '{instanceId}'.");
-
-            await starter.WaitForCompletionOrCreateCheckStatusResponseAsync(req, instanceId);
-
-            return starter.CreateCheckStatusResponse(req, instanceId);
-        }
 
 
-        [FunctionName("DeleteEngineInstance")]
-        public static async void DeleteEngineInstance(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "post", Route = "DeleteEngineInstance/{caseNumber}")]HttpRequestMessage req,
-            [OrchestrationClient]DurableOrchestrationClient starter,
-            string caseNumber,
-            ILogger log)
-        {
-
-            log.LogInformation($"Delete instance for case #{caseNumber}");
-
-            Instance caseInstance = await GetInstanceIdForCase(starter, caseNumber, log);
-
-            var compute = new Compute();
-            compute.Key = caseInstance.State.Compute.Key;
-
-            var eventsOrchestratorEventId = GetEventListenerInstanceId(caseInstance.InstanceId);
-            await starter.RaiseEventAsync(eventsOrchestratorEventId, "EndSessionEvent", compute);
-
-
-            //log.LogInformation($"Completed orchestration with ID = '{instanceId}'.");
-        }
-
-        private static async Task<Instance> GetInstanceIdForCase(DurableOrchestrationClient starter, string caseNumber, ILogger log)
+        private static async Task<Instance> GetInstanceForCase(DurableOrchestrationClient starter, string caseNumber, ILogger log)
         {
             var runnigInstances = await GetInstances(starter, OrchestrationRuntimeStatus.Running, log);
-            var caseInstance = runnigInstances.Last<Instance>(
+            var caseInstance = runnigInstances.LastOrDefault<Instance>(
                 instance => String.Compare(instance?.State?.CaseNumber, caseNumber, true) == 0);
             return caseInstance;
         }
@@ -166,7 +107,7 @@ namespace EngineInstanceMgr
 
             log.LogInformation($"Add collaborator for case #{caseNumber}");
 
-            Instance caseInstance = await GetInstanceIdForCase(starter, caseNumber, log);
+            Instance caseInstance = await GetInstanceForCase(starter, caseNumber, log);
 
             var collaborator = new Collaborator();
             collaborator.CollaboratorUserId = string.Empty;

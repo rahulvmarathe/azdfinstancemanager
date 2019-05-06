@@ -4,11 +4,24 @@
     <AzureFunctionsVersion>v2</AzureFunctionsVersion>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="KubernetesClient" Version="1.5.18" />
     <PackageReference Include="Microsoft.Azure.WebJobs.Extensions.DurableTask" Version="1.8.0" />
     <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="1.0.24" />
   </ItemGroup>
   <ItemGroup>
+    <None Update="enginedeployment.yaml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="engineService.yaml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="host.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="kubeconfig - Copy.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="kubeconfig.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="local.settings.json">
